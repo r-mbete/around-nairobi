@@ -1,56 +1,95 @@
-# Welcome to your Expo app 👋
+# Around Nairobi
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**What's happening in the city this week?**
 
-## Get started
+Around Nairobi is a mobile app that lists the week's events in Nairobi: gigs, markets, exhibitions, talks, sport and community meetups, browsable by day and by neighbourhood.
 
-1. Install dependencies
+It is built to work offline. Many people in Nairobi browse on a patchy connection or run out of bundles mid-week, so the week's listings download once and keep working with no data at all.
 
-   ```bash
-   npm install
-   ```
+> **Status:** early development. The home screen lists sample events grouped by day. Filters, search, event detail, saving, reminders and the offline cache are next.
 
-2. Start the app
+## Features planned for v1
 
-   ```bash
-   npx expo start
-   ```
+- **This week**: events for today and the next 6 days, grouped by day, with time, venue, neighbourhood, category and price
+- **Filters and search**: by category, neighbourhood and free events, with text search that works offline
+- **Event detail**: full description, directions in Google Maps, and sharing to WhatsApp
+- **Saved events and reminders**: save an event and get a local notification before it starts
+- **Organiser submissions**: submit an event for review, with offline submissions queued until a connection returns
+- **Offline-first**: the app always loads from the local cache, syncs only what changed, and shows when the data was last updated
 
-In the output, you'll find options to open the app in a
+Not in v1: ticket sales, user accounts, reviews, or cities other than Nairobi.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Getting started
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+You need [Node.js](https://nodejs.org) (LTS) and the [Expo Go](https://expo.dev/go) app on your phone.
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Scan the QR code with Expo Go (Android) or the Camera app (iOS). Press `w` to open it in a browser instead.
 
-### Other setup steps
+If Expo Go can't connect:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- Make sure your phone and computer are on the same Wi-Fi network.
+- If they are, run `npx expo start --tunnel`.
+- If Expo Go asks you to sign in, run `npx expo login` with the same account you use in Expo Go.
 
-## Learn more
+### Checks
 
-To learn more about developing your project with Expo, look at the following resources:
+Run both before opening a pull request:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npx tsc --noEmit   # typecheck
+npx expo lint      # lint
+```
 
-## Join the community
+## Project structure
 
-Join our community of developers creating universal apps.
+```
+src/
+  app/           Screens (Expo Router: every file is a route)
+  components/    Reusable UI, such as EventCard and Frieze
+  data/          Event types, sample data and date helpers
+  theme/         Design tokens: colours, fonts, spacing
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Always install packages with `npx expo install <package>` rather than `npm install`, so versions match the Expo SDK.
+
+## Design
+
+The look is based on a riso-print travel poster: flat, saturated colour blocks on deep navy, chunky hand-cut lettering, and decorative borders of eyes and diamonds.
+
+| Role | Font | Used for |
+|---|---|---|
+| Display | Bagel Fat One | Wordmark, day headings |
+| Label | Bungee | Times, categories, price tags |
+| Body | Space Grotesk | Titles, venues, descriptions |
+
+Each event category has its own colour. All colours and fonts live in [`src/theme/tokens.ts`](src/theme/tokens.ts). Every colour pairing meets WCAG 2.2 AA contrast, and text scales with the phone's font size setting.
+
+## Tech stack
+
+| Layer | Choice |
+|---|---|
+| App | React Native with Expo and Expo Router |
+| Local storage | expo-sqlite (planned) |
+| Reminders | expo-notifications, local only (planned) |
+| Background refresh | expo-background-task (planned) |
+| Map | react-native-maps (planned) |
+| Backend | PostgreSQL behind a small REST API (planned) |
+
+## Roadmap
+
+1. **Foundation**: project setup, navigation, event schema, local database, seed data *(in progress)*
+2. **Core browsing**: week list, filters, search, event detail, directions, sharing
+3. **Offline**: local cache, delta sync, retry with backoff, offline banner
+4. **Saved and reminders**
+5. **Submissions and admin**
+6. **Map and change alerts**
+7. **Beta**: 30–50 testers, then Play Store release
+
+## License
+
+[MIT](LICENSE)
