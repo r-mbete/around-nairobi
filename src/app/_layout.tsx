@@ -30,7 +30,9 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ink } }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ink } }}>
+        <Stack.Screen name="filters" options={{ presentation: "modal" }} />
+      </Stack>
     </>
   );
 }
