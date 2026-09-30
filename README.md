@@ -46,12 +46,15 @@ After adding or updating packages, restart with `npx expo start -c` to clear the
 
 ### Checks
 
-Run both before opening a pull request:
+Run all three before opening a pull request:
 
 ```bash
 npx tsc --noEmit   # typecheck
 npx expo lint      # lint
+npm test           # unit and component tests (npm run test:watch while working)
 ```
+
+Tests use Jest with `jest-expo` and React Native Testing Library. They live in `__tests__/` folders next to the code they cover, never inside `src/app/`, because every file there becomes a screen. They cover the sync engine, the submission queue, reminders, filters and search, the form checks, the Nairobi time helpers, and the event card and Save panel.
 
 ## How it works
 

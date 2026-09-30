@@ -20,24 +20,25 @@ export function isQueued(id: string) {
 
 let flushing: Promise<void> | null = null;
 
+async function drain() {
+  for (;;) {
+    const next = outbox.get().queue[0];
+    if (!next) return;
+    try {
+      await submitEvent(next.submission);
+    } catch {
+      outbox.set((o) => ({ ...o, queue: o.queue.map((q) => (q === next ? { ...q, attempts: q.attempts + 1 } : q)) }));
+      return;
+    }
+    outbox.set((o) => ({ queue: o.queue.filter((q) => q.submission.id !== next.submission.id), sentCount: o.sentCount + 1 }));
+  }
+}
+
 /** Sends queued submissions oldest first, stopping at the first failure (usually: still offline). */
 export function flushOutbox(): Promise<void> {
-  flushing ??= (async () => {
-    try {
-      for (;;) {
-        const next = outbox.get().queue[0];
-        if (!next) return;
-        try {
-          await submitEvent(next.submission);
-        } catch {
-          outbox.set((o) => ({ ...o, queue: o.queue.map((q) => (q === next ? { ...q, attempts: q.attempts + 1 } : q)) }));
-          return;
-        }
-        outbox.set((o) => ({ queue: o.queue.filter((q) => q.submission.id !== next.submission.id), sentCount: o.sentCount + 1 }));
-      }
-    } finally {
-      flushing = null;
-    }
-  })();
+  // Cleared in .finally so it runs after the assignment, even when drain() finishes without awaiting.
+  flushing ??= drain().finally(() => {
+    flushing = null;
+  });
   return flushing;
 }

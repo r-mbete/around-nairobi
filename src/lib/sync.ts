@@ -17,7 +17,7 @@ export type SyncStatus =
 export const syncStatus = createStore<SyncStatus>({ state: "idle" });
 export const useSyncStatus = syncStatus.use;
 
-const BACKOFF_MS = [30_000, 120_000, 600_000]; // O6
+export const BACKOFF_MS = [30_000, 120_000, 600_000]; // O6
 const FOREGROUND_REFRESH_MS = 15 * 60_000;
 
 let failures = 0;
@@ -25,7 +25,7 @@ let retryTimer: ReturnType<typeof setTimeout> | null = null;
 let inFlight: Promise<void> | null = null;
 
 /** Merges a delta into the cache. The cursor only moves on success, so a dropped sync just repeats (O6). */
-function applyChanges(prev: Cache, changes: Changes): Cache {
+export function applyChanges(prev: Cache, changes: Changes, now = Date.now()): Cache {
   const events: Record<string, Event> = { ...prev.events };
   const venues: Record<string, Venue> = { ...prev.venues };
 
@@ -35,43 +35,49 @@ function applyChanges(prev: Cache, changes: Changes): Cache {
     else events[e.id] = e; // Cancelled events are kept and shown as cancelled (O9).
   }
   for (const [id, e] of Object.entries(events)) {
-    if (isPrunable(e)) delete events[id];
+    if (isPrunable(e, now)) delete events[id];
   }
-  return { events, venues, cursor: changes.serverTime, lastSyncedAt: Date.now() };
+  return { events, venues, cursor: changes.serverTime, lastSyncedAt: now };
 }
 
 /** Fetches only what changed since the last sync (O2). Safe to call often; concurrent calls share one request. */
 export function syncNow(): Promise<void> {
-  inFlight ??= (async () => {
-    if (retryTimer) clearTimeout(retryTimer);
-    retryTimer = null;
-    syncStatus.set({ state: "syncing" });
-    try {
-      const before = cache.get();
-      const changes = await fetchChanges(before.cursor);
-      const after = applyChanges(before, changes);
-      cache.set(after);
-      failures = 0;
-      syncStatus.set({ state: "idle" });
-      void flushOutbox(); // The connection works, so anything queued can go too.
-
-      // Tell people about saved events that moved or were cancelled (F13).
-      const saved = getSaved();
-      for (const e of changes.events) {
-        const was = getEvent(before, e.id);
-        const now = getEvent(after, e.id);
-        if (saved[e.id] && was && now) await onSavedEventChanged(was, now);
-      }
-    } catch {
-      const delay = BACKOFF_MS[Math.min(failures, BACKOFF_MS.length - 1)];
-      failures += 1;
-      retryTimer = setTimeout(() => void syncNow(), delay);
-      syncStatus.set({ state: "failed", retryAt: Date.now() + delay });
-    } finally {
-      inFlight = null;
-    }
-  })();
+  inFlight ??= runSync().finally(() => {
+    inFlight = null;
+  });
   return inFlight;
+}
+
+async function runSync() {
+  if (retryTimer) clearTimeout(retryTimer);
+  retryTimer = null;
+  syncStatus.set({ state: "syncing" });
+
+  const before = cache.get();
+  let changes: Changes;
+  try {
+    changes = await fetchChanges(before.cursor);
+  } catch {
+    const delay = BACKOFF_MS[Math.min(failures, BACKOFF_MS.length - 1)];
+    failures += 1;
+    retryTimer = setTimeout(() => void syncNow(), delay);
+    syncStatus.set({ state: "failed", retryAt: Date.now() + delay });
+    return;
+  }
+
+  const after = applyChanges(before, changes);
+  cache.set(after);
+  failures = 0;
+  syncStatus.set({ state: "idle" });
+  void flushOutbox(); // The connection works, so anything queued can go too.
+
+  // Tell people about saved events that moved or were cancelled (F13). A failed alert doesn't undo the sync.
+  const saved = getSaved();
+  for (const e of changes.events) {
+    const was = getEvent(before, e.id);
+    const now = getEvent(after, e.id);
+    if (saved[e.id] && was && now) await onSavedEventChanged(was, now).catch(() => {});
+  }
 }
 
 function syncAndFlush() {
