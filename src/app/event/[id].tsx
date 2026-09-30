@@ -1,12 +1,15 @@
 import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Frieze } from "@/components/frieze";
 import { PosterButton } from "@/components/poster-button";
-import { formatDay, formatTime, getEvent, type ListedEvent, priceLabel } from "@/data/events";
+import { SavePanel } from "@/components/save-panel";
+import { getEvent, useCache } from "@/data/cache";
+import { formatDay, formatTime, type ListedEvent, priceLabel } from "@/data/events";
+import { acknowledgeChange, getSaved } from "@/data/saved";
 import { categoryColors, colors, fonts, space } from "@/theme/tokens";
 
 function goBack() {
@@ -41,7 +44,10 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const event = getEvent(id);
+  const event = getEvent(useCache(), id);
+  // Remember the change flag from when the screen opened, then mark it seen (F13).
+  const [changeOnOpen] = useState(() => getSaved()[id]?.change ?? null);
+  useEffect(() => acknowledgeChange(id), [id]);
 
   if (!event) {
     return (
@@ -79,6 +85,15 @@ export default function EventDetail() {
             <Text style={styles.cancelledText}>This event has been cancelled</Text>
           </View>
         )}
+        {!cancelled && changeOnOpen === "updated" && (
+          <View style={styles.cancelled} accessibilityRole="alert">
+            <Text style={styles.cancelledText}>The time or venue changed since you saved this</Text>
+          </View>
+        )}
+
+        <View style={styles.save}>
+          <SavePanel event={event} />
+        </View>
 
         <View style={styles.panel}>
           <Row label="Where">
@@ -134,6 +149,7 @@ const styles = StyleSheet.create({
   rowLabel: { fontFamily: fonts.label, fontSize: 11, letterSpacing: 1, color: colors.inkSoft, textTransform: "uppercase" },
   strong: { fontFamily: fonts.bodyBold, fontSize: 17, lineHeight: 22, color: colors.ink },
   body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 23, color: colors.ink },
+  save: { paddingHorizontal: space.lg, paddingTop: space.lg },
   actions: { padding: space.lg, gap: space.sm },
   missing: { padding: space.lg, gap: space.md, justifyContent: "center" },
   missingBody: { fontFamily: fonts.body, fontSize: 16, lineHeight: 23, color: colors.cream },

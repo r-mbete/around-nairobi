@@ -4,13 +4,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Chip } from "@/components/chip";
 import { PosterButton } from "@/components/poster-button";
-import { CATEGORIES, listEvents, NEIGHBOURHOODS } from "@/data/events";
+import { listEvents, neighbourhoods, useCache } from "@/data/cache";
+import { CATEGORIES } from "@/data/events";
 import { activeFilterCount, applyFilters, clearFilters, setFilters, toggle, useFilters } from "@/data/filters";
 import { categoryColors, colors, fonts, space } from "@/theme/tokens";
 
 export default function FiltersScreen() {
   const filters = useFilters();
-  const matches = applyFilters(listEvents(), filters).length;
+  const data = useCache();
+  const matches = applyFilters(listEvents(data), filters).length;
+  // Keep chosen neighbourhoods visible even if this week has no events there.
+  const areas = [...new Set([...neighbourhoods(data), ...filters.neighbourhoods])].sort();
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "bottom", "left", "right"]}>
@@ -39,7 +43,7 @@ export default function FiltersScreen() {
 
         <Text style={styles.groupTitle} accessibilityRole="header">Neighbourhood</Text>
         <View style={styles.chips}>
-          {NEIGHBOURHOODS.map((n) => (
+          {areas.map((n) => (
             <Chip
               key={n}
               label={n}

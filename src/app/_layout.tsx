@@ -7,9 +7,12 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 
+import { configureNotifications, useNotificationTaps } from "@/lib/reminders";
+import { startSync } from "@/lib/sync";
 import { colors } from "@/theme/tokens";
 
 SplashScreen.preventAutoHideAsync();
+configureNotifications();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -24,6 +27,10 @@ export default function RootLayout() {
     if (loaded || error) SplashScreen.hideAsync();
   }, [loaded, error]);
 
+  // Screens render from the on-device cache straight away; syncing happens behind them (O1).
+  useEffect(() => startSync(), []);
+  useNotificationTaps();
+
   // On a font error we still render with system fonts rather than block the app.
   if (!loaded && !error) return null;
 
@@ -31,6 +38,8 @@ export default function RootLayout() {
     <>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ink } }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="event/[id]" />
         <Stack.Screen name="filters" options={{ presentation: "modal" }} />
       </Stack>
     </>
