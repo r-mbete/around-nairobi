@@ -125,6 +125,18 @@ Each event category has its own colour. All colours and fonts live in [`src/them
 | Map | react-native-maps (planned) |
 | Backend | PostgreSQL behind a small REST API (planned) |
 
+## Why React Native
+
+The app is written in [React Native](https://reactnative.dev), with [Expo](https://expo.dev) providing the tooling and native modules. Screens are built from React Native components, so on a phone they render as real native Android and iOS interface, not a web page. The browser preview uses `react-native-web` and is only for quick checks during development.
+
+I chose React Native over native Android in Kotlin because:
+
+- **One codebase for Android and iOS.** v1 targets both Android 9+ and iOS 15+. Kotlin would cover Android only, so iOS would need a second app in Swift.
+- **Over-the-air updates.** With EAS Update, fixes and content changes can reach phones without waiting for a store release.
+- **Fast iteration.** Expo Go runs the app on a real phone straight from the dev server, and Expo covers what v1 needs (storage, notifications, network state, maps) without writing native code.
+
+The trade-off is that Kotlin would give a smaller app and slightly better performance on low-end phones. React Native is fast enough for the target phone (a 2 GB RAM Android) if lists stay lean and the app loads from the on-device cache, so that trade-off is worth it.
+
 ## Roadmap
 
 1. **Foundation**: project setup, navigation, event schema, on-device storage, seed data *(done)*
@@ -140,3 +152,7 @@ Also still to do: image thumbnails with a data-saver setting, and moving all on-
 ## License
 
 [MIT](LICENSE)
+
+## AI assistance
+
+I built parts of this project with help from an AI coding assistant (Claude). I made the key decisions myself: the requirements and v1 scope, choosing React Native, the poster-inspired visual direction, and the design changes along the way.
