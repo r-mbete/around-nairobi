@@ -206,7 +206,7 @@ export default function SubmitScreen() {
             <Field label="Starts" value={form.start} onChangeText={(v) => set("start", v)} error={errors.start} placeholder="19:30" keyboardType="numbers-and-punctuation" maxLength={5} />
           </View>
           <View style={styles.half}>
-            <Field label="Ends" hint="Optional" value={form.end} onChangeText={(v) => set("end", v)} error={errors.end} placeholder="22:00" keyboardType="numbers-and-punctuation" maxLength={5} />
+            <Field label="Ends · optional" value={form.end} onChangeText={(v) => set("end", v)} error={errors.end} placeholder="22:00" keyboardType="numbers-and-punctuation" maxLength={5} />
           </View>
         </View>
 
