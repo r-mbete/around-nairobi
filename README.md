@@ -6,7 +6,7 @@ Around Nairobi is a mobile app that lists the week's events in Nairobi: gigs, ma
 
 It is built to work offline. Many people in Nairobi browse on a patchy connection or run out of bundles mid-week, so the week's listings download once and keep working with no data at all.
 
-> **Status:** the v1 app features work end to end against a built-in fake server. There is no real backend or admin screen yet, so submitted events are not reviewed or published anywhere.
+> **Status:** the v1 app and its backend work end to end locally: the app syncs from the backend, organisers submit events, and a moderator approves them at `/admin`. Nothing is deployed yet.
 
 ## Features
 
@@ -67,22 +67,20 @@ Screens never call the network. They read from data stored on the phone, and a s
 
 ### Backend
 
-There's no backend yet, so a fake server inside the app answers requests. Its sample week stays the same for 4 days, then refreshes.
+The backend lives in [`backend/`](backend/README.md). It's a Next.js app with Postgres that serves the API and the moderation screen. To run the app against it:
 
-To use a real backend, set its URL before starting the app:
+1. Start the backend: `cd backend && npm install && cp .env.example .env.local`, set the admin password and secret, then `npm run setup && npm run dev -- -H 0.0.0.0`.
+2. In the project root, copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_API_URL=http://<your computer's network address>:3000/api`.
+3. Restart Expo with `npx expo start -c`.
 
-```bash
-EXPO_PUBLIC_API_URL=https://api.example.com npx expo start
-```
+Without `EXPO_PUBLIC_API_URL`, the app uses a fake server built into the app, so it still works without the backend. The fake server's sample week stays the same for 4 days, then refreshes.
 
-It needs two endpoints:
+The app needs two endpoints. Their contract is in [`src/lib/api.ts`](src/lib/api.ts), and [`backend/README.md`](backend/README.md) has the details:
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /events?updatedSince=<ISO time>` | Returns `{ serverTime, events, venues }` for everything published or cancelled since that time. Without `updatedSince`, returns the whole week. |
+| `GET /events?updatedSince=<ISO time>` | Returns `{ serverTime, events, venues }` for everything changed since that time. Without `updatedSince`, returns everything currently listed. |
 | `POST /submissions` | Stores a submitted event as pending for review. Sends an `Idempotency-Key` header so a retried submission isn't stored twice. |
-
-The details are in [`src/lib/api.ts`](src/lib/api.ts).
 
 ## Project structure
 
@@ -97,6 +95,7 @@ src/
   hooks/         Small shared hooks (online state, current time)
   lib/           API client, fake server, sync engine, reminders, on-device storage
   theme/         Design tokens: colours, fonts, spacing
+backend/         Next.js API and moderation screen (separate package, see backend/README.md)
 ```
 
 Files ending in `.web.ts` replace their neighbour on web. The web preview uses the browser's storage and skips notifications.
@@ -126,7 +125,8 @@ Each event category has its own colour. All colours and fonts live in [`src/them
 | Icons | expo-symbols |
 | Background refresh | expo-background-task (planned) |
 | Map | react-native-maps (planned) |
-| Backend | PostgreSQL behind a small REST API (planned) |
+| Backend | Next.js 16 with Postgres (Drizzle ORM); PGlite for local development |
+| Admin | Moderation screen in the same Next.js app |
 
 ## Why React Native
 
@@ -146,7 +146,7 @@ The trade-off is that Kotlin would give a smaller app and slightly better perfor
 2. **Core browsing**: week list, filters, search, event detail, directions, sharing *(done)*
 3. **Offline**: cache, delta sync, retry with backoff, offline banner *(done; twice-daily background refresh still to do)*
 4. **Saved and reminders** *(done)*
-5. **Submissions and admin**: app form and offline queue *(done)*; backend and moderation screen *(to do)*
+5. **Submissions and admin**: app form, offline queue, backend API and moderation screen *(done; deployment, rejection emails and per-person admin accounts still to do)*
 6. **Map and alerts**: alerts for changed saved events *(done)*; map view and "Tonight" shortcut *(to do)*
 7. **Beta**: 30–50 testers, then Play Store release
 

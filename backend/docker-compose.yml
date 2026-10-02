@@ -1,0 +1,19 @@
+# Local Postgres. `docker compose up -d`, then set DATABASE_URL in .env.local (see .env.example).
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: around
+      POSTGRES_PASSWORD: around
+      POSTGRES_DB: around_nairobi
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U around -d around_nairobi"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:

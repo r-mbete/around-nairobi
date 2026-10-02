@@ -65,7 +65,8 @@
     },
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "<rootDir>/example/"
+      "<rootDir>/example/",
+      "<rootDir>/backend/"
     ]
   }
 }
